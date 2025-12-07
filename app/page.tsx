@@ -1,65 +1,284 @@
-import Image from "next/image";
+import Image from "next/image"
+import Link from "next/link"
+import { prisma } from "@/lib/prisma"
+import ContactForm from "@/components/ContactForm"
 
-export default function Home() {
+async function getProfile() {
+  try {
+    const profile = await prisma.profile.findFirst()
+    return profile
+  } catch (error) {
+    return null
+  }
+}
+
+async function getJobHistory() {
+  try {
+    const jobs = await prisma.jobHistory.findMany({
+      orderBy: [{ order: "asc" }, { startDate: "desc" }],
+    })
+    return jobs
+  } catch (error) {
+    return []
+  }
+}
+
+async function getCertifications() {
+  try {
+    const certifications = await prisma.certification.findMany({
+      orderBy: [{ order: "asc" }, { issueDate: "desc" }],
+    })
+    return certifications
+  } catch (error) {
+    return []
+  }
+}
+
+async function getRecentBlogPosts() {
+  try {
+    const posts = await prisma.blogPost.findMany({
+      where: { published: true },
+      orderBy: { publishedAt: "desc" },
+      take: 3,
+      select: {
+        title: true,
+        slug: true,
+        excerpt: true,
+        publishedAt: true,
+      },
+    })
+    return posts
+  } catch (error) {
+    return []
+  }
+}
+
+export default async function Home() {
+  const [profile, jobs, certifications, recentPosts] = await Promise.all([
+    getProfile(),
+    getJobHistory(),
+    getCertifications(),
+    getRecentBlogPosts(),
+  ])
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <div className="min-h-screen bg-white">
+      {/* Hero Section */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-blue-50 to-indigo-100">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+            <div>
+              <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-4">
+                {profile?.name || "Professional Name"}
+              </h1>
+              <h2 className="text-xl sm:text-2xl text-gray-700 mb-6">
+                {profile?.title || "Professional Title"}
+              </h2>
+              <p className="text-lg text-gray-600 mb-6">
+                {profile?.summary || "Professional summary"}
+              </p>
+              <div className="flex flex-wrap gap-4">
+                {profile?.email && (
+                  <a
+                    href={`mailto:${profile.email}`}
+                    className="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition"
+                  >
+                    Contact Me
+                  </a>
+                )}
+                {profile?.linkedin && (
+                  <a
+                    href={profile.linkedin}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center px-6 py-3 border-2 border-blue-600 text-blue-600 font-medium rounded-lg hover:bg-blue-50 transition"
+                  >
+                    LinkedIn
+                  </a>
+                )}
+              </div>
+            </div>
+            <div className="flex justify-center">
+              {profile?.profileImage ? (
+                <div className="relative w-64 h-64 rounded-full overflow-hidden shadow-xl">
+                  <Image
+                    src={profile.profileImage}
+                    alt={profile.name}
+                    fill
+                    className="object-cover"
+                  />
+                </div>
+              ) : (
+                <div className="w-64 h-64 rounded-full bg-gradient-to-br from-blue-400 to-indigo-600 shadow-xl flex items-center justify-center">
+                  <span className="text-6xl font-bold text-white">
+                    {profile?.name?.charAt(0) || "P"}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* About Section */}
+      {profile?.bio && (
+        <section className="py-16 px-4 sm:px-6 lg:px-8">
+          <div className="max-w-4xl mx-auto">
+            <h2 className="text-3xl font-bold text-gray-900 mb-6">About Me</h2>
+            <p className="text-lg text-gray-700 leading-relaxed">{profile.bio}</p>
+          </div>
+        </section>
+      )}
+
+      {/* Job History Section */}
+      {jobs.length > 0 && (
+        <section className="py-16 px-4 sm:px-6 lg:px-8 bg-gray-50">
+          <div className="max-w-4xl mx-auto">
+            <h2 className="text-3xl font-bold text-gray-900 mb-8">
+              Professional Experience
+            </h2>
+            <div className="space-y-8">
+              {jobs.map((job) => (
+                <div key={job.id} className="bg-white p-6 rounded-lg shadow-md">
+                  <h3 className="text-xl font-semibold text-gray-900">
+                    {job.position}
+                  </h3>
+                  <p className="text-lg text-blue-600 mb-2">{job.company}</p>
+                  <p className="text-sm text-gray-500 mb-4">
+                    {new Date(job.startDate).toLocaleDateString("en-US", {
+                      month: "long",
+                      year: "numeric",
+                    })}{" "}
+                    -{" "}
+                    {job.current
+                      ? "Present"
+                      : job.endDate
+                      ? new Date(job.endDate).toLocaleDateString("en-US", {
+                          month: "long",
+                          year: "numeric",
+                        })
+                      : "Present"}
+                  </p>
+                  {job.description && (
+                    <p className="text-gray-700">{job.description}</p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Certifications Section */}
+      {certifications.length > 0 && (
+        <section className="py-16 px-4 sm:px-6 lg:px-8">
+          <div className="max-w-4xl mx-auto">
+            <h2 className="text-3xl font-bold text-gray-900 mb-8">
+              Certifications
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {certifications.map((cert) => (
+                <div key={cert.id} className="border border-gray-200 p-6 rounded-lg">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                    {cert.name}
+                  </h3>
+                  <p className="text-blue-600 mb-2">{cert.issuer}</p>
+                  <p className="text-sm text-gray-500 mb-2">
+                    Issued:{" "}
+                    {new Date(cert.issueDate).toLocaleDateString("en-US", {
+                      month: "long",
+                      year: "numeric",
+                    })}
+                  </p>
+                  {cert.expiryDate && (
+                    <p className="text-sm text-gray-500 mb-2">
+                      Expires:{" "}
+                      {new Date(cert.expiryDate).toLocaleDateString("en-US", {
+                        month: "long",
+                        year: "numeric",
+                      })}
+                    </p>
+                  )}
+                  {cert.description && (
+                    <p className="text-gray-700 text-sm mt-2">{cert.description}</p>
+                  )}
+                  {cert.credentialUrl && (
+                    <a
+                      href={cert.credentialUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:underline text-sm mt-2 inline-block"
+                    >
+                      View Credential
+                    </a>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Recent Blog Posts Section */}
+      {recentPosts.length > 0 && (
+        <section className="py-16 px-4 sm:px-6 lg:px-8 bg-gray-50">
+          <div className="max-w-4xl mx-auto">
+            <div className="flex justify-between items-center mb-8">
+              <h2 className="text-3xl font-bold text-gray-900">Recent Articles</h2>
+              <Link
+                href="/blog"
+                className="text-blue-600 hover:text-blue-700 font-medium"
+              >
+                View All →
+              </Link>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {recentPosts.map((post) => (
+                <Link
+                  key={post.slug}
+                  href={`/blog/${post.slug}`}
+                  className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition"
+                >
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                    {post.title}
+                  </h3>
+                  <p className="text-gray-600 text-sm mb-3">{post.excerpt}</p>
+                  <p className="text-xs text-gray-500">
+                    {post.publishedAt &&
+                      new Date(post.publishedAt).toLocaleDateString("en-US", {
+                        month: "long",
+                        day: "numeric",
+                        year: "numeric",
+                      })}
+                  </p>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Contact Section */}
+      <section id="contact" className="py-16 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-4xl mx-auto">
+          <h2 className="text-3xl font-bold text-gray-900 mb-8 text-center">
+            Get In Touch
+          </h2>
+          <div className="max-w-2xl mx-auto">
+            <ContactForm />
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="bg-gray-900 text-white py-8 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-4xl mx-auto text-center">
+          <p className="text-gray-400">
+            © {new Date().getFullYear()} {profile?.name || "Professional Name"}. All
+            rights reserved.
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+      </footer>
     </div>
-  );
+  )
 }

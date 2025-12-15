@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import { revalidatePath } from "next/cache"
 import { prisma } from "@/lib/prisma"
 import { auth } from "@/lib/auth"
 
@@ -27,6 +28,11 @@ export async function POST(request: NextRequest) {
     const certification = await prisma.certification.create({
       data,
     })
+
+    // Revalidate the homepage to show updated certifications
+    revalidatePath('/')
+    revalidatePath('/admin/certifications')
+
     return NextResponse.json(certification)
   } catch (error) {
     return NextResponse.json(

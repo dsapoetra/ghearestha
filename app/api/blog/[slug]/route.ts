@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import { revalidatePath } from "next/cache"
 import { prisma } from "@/lib/prisma"
 import { auth } from "@/lib/auth"
 
@@ -51,6 +52,13 @@ export async function PUT(
         publishedAt: data.published && !data.publishedAt ? new Date() : data.publishedAt,
       },
     })
+
+    // Revalidate pages to show updated blog post
+    revalidatePath('/')
+    revalidatePath('/blog')
+    revalidatePath(`/blog/${slug}`)
+    revalidatePath('/admin/blog')
+
     return NextResponse.json(post)
   } catch (error) {
     return NextResponse.json(
@@ -74,6 +82,13 @@ export async function DELETE(
     await prisma.blogPost.delete({
       where: { slug },
     })
+
+    // Revalidate pages to show updated blog posts
+    revalidatePath('/')
+    revalidatePath('/blog')
+    revalidatePath(`/blog/${slug}`)
+    revalidatePath('/admin/blog')
+
     return NextResponse.json({ message: "Blog post deleted" })
   } catch (error) {
     return NextResponse.json(

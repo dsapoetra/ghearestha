@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import { revalidatePath } from "next/cache"
 import { prisma } from "@/lib/prisma"
 import { auth } from "@/lib/auth"
 
@@ -48,6 +49,12 @@ export async function POST(request: NextRequest) {
         publishedAt: data.published ? new Date() : null,
       },
     })
+
+    // Revalidate pages to show updated blog posts
+    revalidatePath('/')
+    revalidatePath('/blog')
+    revalidatePath('/admin/blog')
+
     return NextResponse.json(post)
   } catch (error) {
     return NextResponse.json(

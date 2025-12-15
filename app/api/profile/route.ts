@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import { revalidatePath } from "next/cache"
 import { prisma } from "@/lib/prisma"
 import { auth } from "@/lib/auth"
 
@@ -39,6 +40,10 @@ export async function PUT(request: NextRequest) {
         data,
       })
     }
+
+    // Revalidate the homepage to show updated profile data
+    revalidatePath('/')
+    revalidatePath('/admin/profile')
 
     return NextResponse.json(profile)
   } catch (error) {

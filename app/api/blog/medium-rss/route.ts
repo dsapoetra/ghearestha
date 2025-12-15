@@ -55,7 +55,12 @@ function parseRssFeed(xml: string): MediumPost[] {
 
       // Extract thumbnail from content
       const imgMatch = content.match(/<img[^>]+src="([^">]+)"/)
-      const thumbnail = imgMatch ? imgMatch[1] : undefined
+      let thumbnail = imgMatch ? imgMatch[1] : undefined
+
+      // Filter out tracking pixels and invalid images
+      if (thumbnail && (thumbnail.includes('/_/stat?') || thumbnail.includes('width="1"') || thumbnail.includes('height="1"'))) {
+        thumbnail = undefined
+      }
 
       // Extract categories
       const categoryRegex = /<category>(.*?)<\/category>/g

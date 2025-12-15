@@ -80,18 +80,6 @@ export async function POST() {
       ],
     })
 
-    // Create sample blog post
-    await prisma.blogPost.create({
-      data: {
-        title: "The Future of Remote Work in HR",
-        slug: "future-of-remote-work-in-hr",
-        excerpt: "Exploring how HR professionals can adapt to the changing landscape of remote work",
-        content: "<h2>Introduction</h2><p>Remote work has transformed the way we think about HR...</p>",
-        published: true,
-        publishedAt: new Date(),
-      },
-    })
-
     return NextResponse.json({
       message: "Database seeded successfully",
       credentials: {

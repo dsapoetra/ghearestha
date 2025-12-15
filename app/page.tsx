@@ -36,18 +36,20 @@ async function getCertifications() {
 
 async function getRecentBlogPosts() {
   try {
-    const posts = await prisma.blogPost.findMany({
-      where: { published: true },
-      orderBy: { publishedAt: "desc" },
-      take: 3,
-      select: {
-        title: true,
-        slug: true,
-        excerpt: true,
-        publishedAt: true,
-      },
-    })
-    return posts
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/api/blog/medium-rss`,
+      {
+        next: { revalidate: 3600 }, // Cache for 1 hour
+      }
+    )
+
+    if (!response.ok) {
+      return []
+    }
+
+    const posts = await response.json()
+    // Return only the first 3 posts
+    return Array.isArray(posts) ? posts.slice(0, 3) : []
   } catch (error) {
     return []
   }
@@ -219,7 +221,7 @@ export default async function Home() {
         </section>
       )}
 
-      {/* Recent Blog Posts Section */}
+      {/* Recent Blog Posts Section - From Medium RSS */}
       {recentPosts.length > 0 && (
         <section className="py-16 px-4 sm:px-6 lg:px-8 bg-gray-50">
           <div className="max-w-4xl mx-auto">
@@ -233,25 +235,36 @@ export default async function Home() {
               </Link>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {recentPosts.map((post) => (
-                <Link
-                  key={post.slug}
-                  href={`/blog/${post.slug}`}
+              {recentPosts.map((post: any) => (
+                <a
+                  key={post.link}
+                  href={post.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition"
                 >
+                  {post.thumbnail && (
+                    <div className="mb-4 w-full h-40 relative overflow-hidden rounded">
+                      <Image
+                        src={post.thumbnail}
+                        alt={post.title}
+                        fill
+                        className="object-cover"
+                      />
+                    </div>
+                  )}
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">
                     {post.title}
                   </h3>
-                  <p className="text-gray-600 text-sm mb-3">{post.excerpt}</p>
+                  <p className="text-gray-600 text-sm mb-3">{post.description}</p>
                   <p className="text-xs text-gray-500">
-                    {post.publishedAt &&
-                      new Date(post.publishedAt).toLocaleDateString("en-US", {
-                        month: "long",
-                        day: "numeric",
-                        year: "numeric",
-                      })}
+                    {new Date(post.pubDate).toLocaleDateString("en-US", {
+                      month: "long",
+                      day: "numeric",
+                      year: "numeric",
+                    })}
                   </p>
-                </Link>
+                </a>
               ))}
             </div>
           </div>

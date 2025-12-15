@@ -87,7 +87,16 @@ function parseRssFeed(xml: string): MediumPost[] {
 function extractTag(xml: string, tagName: string): string {
   const regex = new RegExp(`<${tagName}[^>]*>([\\s\\S]*?)</${tagName}>`)
   const match = xml.match(regex)
-  return match ? match[1].trim() : ""
+  if (!match) return ""
+
+  let content = match[1].trim()
+
+  // Remove CDATA wrapper if present
+  if (content.startsWith("<![CDATA[") && content.endsWith("]]>")) {
+    content = content.substring(9, content.length - 3)
+  }
+
+  return content
 }
 
 function stripHtml(html: string): string {

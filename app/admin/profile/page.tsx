@@ -3,6 +3,7 @@
 import { useState, useEffect, FormEvent } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
+import ImageUpload from "@/components/ImageUpload"
 
 export default function ProfileEditor() {
   const router = useRouter()
@@ -151,20 +152,15 @@ export default function ProfileEditor() {
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Profile Image URL
-                </label>
-                <input
-                  type="url"
-                  value={profile.profileImage}
-                  onChange={(e) =>
-                    setProfile({ ...profile, profileImage: e.target.value })
-                  }
-                  placeholder="https://example.com/image.jpg"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
+              <ImageUpload
+                currentImage={profile.profileImage}
+                onImageChange={(url) =>
+                  setProfile({ ...profile, profileImage: url })
+                }
+                uploadEndpoint="/api/upload/profile-image"
+                label="Profile Image"
+                aspectRatio="square"
+              />
             </div>
           </div>
 
